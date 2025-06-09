@@ -1,0 +1,113 @@
+#!/bin/bash
+
+error_exit() {
+    echo "Помилка: неправильне значення аргумента" >&2
+    exit 1
+}
+
+draw_line() {
+    local symbol=$1
+    local width=$2
+    local total_width=$3
+
+    local spaces=$(( (total_width - width) / 2 ))
+
+    for ((i = 0; i < spaces; i++)); do
+        printf " "
+    done
+
+    for ((i = 0; i < width; i++)); do
+        printf "%s" "$symbol"
+    done
+
+    printf "\n"
+}
+
+if [ $# -ne 2 ]; then
+    error_exit
+fi
+
+height=$1
+snow_width=$2
+
+if ! [[ "$height" =~ ^[0-9]+$ ]] || ! [[ "$snow_width" =~ ^[0-9]+$ ]]; then
+    error_exit
+fi
+
+if [ "$height" -le 0 ] || [ "$snow_width" -le 0 ]; then
+    error_exit
+fi
+
+height=$((height))
+snow_width=$((snow_width))
+
+max_branch_width=$((snow_width - 2))
+
+if [ "$max_branch_width" -lt 1 ]; then
+    error_exit
+fi
+
+trunk_height=2
+snow_height=1
+
+available_height=$((height - trunk_height - snow_height))
+
+first_tier_height=0
+width=1
+while [ $width -le $max_branch_width ]; do
+    first_tier_height=$((first_tier_height + 1))
+    width=$((width + 2))
+done
+
+second_tier_height=0
+width=3
+while [ $width -le $max_branch_width ]; do
+    second_tier_height=$((second_tier_height + 1))
+    width=$((width + 2))
+done
+
+total_needed_height=$((first_tier_height + second_tier_height))
+
+if [ $available_height -lt 2 ]; then
+    error_exit
+fi
+
+unused_height=$((available_height - total_needed_height))
+if [ $unused_height -gt 1 ]; then
+    error_exit
+fi
+
+draw_tier() {
+    local start_width=$1
+    local max_width=$2
+
+    local current_width=$start_width
+
+    while [ $current_width -le $max_width ]; do
+        local symbol
+        if [ $((global_line_counter % 2)) -eq 0 ]; then
+            symbol="*"
+        else
+            symbol="#"
+        fi
+
+        draw_line "$symbol" "$current_width" "$snow_width"
+        current_width=$((current_width + 2))
+        global_line_counter=$((global_line_counter + 1))
+    done
+}
+
+global_line_counter=0
+
+draw_tier 1 $max_branch_width
+
+draw_tier 3 $max_branch_width
+
+trunk_width=3
+count=0
+until [ $count -ge $trunk_height ]; do
+    draw_line "#" "$trunk_width" "$snow_width"
+    count=$((count + 1))
+done
+
+draw_line "*" "$snow_width" "$snow_width"
